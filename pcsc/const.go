@@ -10,3 +10,116 @@ const (
 	ScardScopeTerminal ScopeType = 0x1
 	ScardScopeSystem   ScopeType = 0x2
 )
+
+type ShareType int
+
+const (
+	ScardShareShared    ShareType = 0x2
+	ScardShareExclusive ShareType = 0x1
+	ScardShareDirect    ShareType = 0x3
+)
+
+type DispositionType int
+
+const (
+	ScardLeaveCard   DispositionType = 0x0
+	ScardResetCard   DispositionType = 0x1
+	ScardUnpowerCard DispositionType = 0x2
+	ScardEjectCard   DispositionType = 0x3
+)
+
+type StateType int
+
+const (
+	ScardStateUnaware     StateType = 0x0
+	ScardStateIgnore      StateType = 0x1
+	ScardStateChanged     StateType = 0x2
+	ScardStateUnknown     StateType = 0x4
+	ScardStateUnavailable StateType = 0x8
+	ScardStateEmpty       StateType = 0x10
+	ScardStatePresent     StateType = 0x20
+	ScardStateAtrMatch    StateType = 0x40
+	ScardStateExclusive   StateType = 0x80
+	ScardStateInUse       StateType = 0x100
+	ScardStateMute        StateType = 0x200
+)
+
+type ProtocolType int
+
+const (
+	ScardProtocolUnset     ProtocolType = 0x0
+	ScardProtocolT0        ProtocolType = 0x1
+	ScardProtocolT1        ProtocolType = 0x2
+	ScardProtocolRaw       ProtocolType = 0x4
+	ScardProtocolT15       ProtocolType = 0x8
+	ScardProtocolAny       ProtocolType = 0x3
+	ScardProtocolUndefined ProtocolType = 0x0
+)
+
+type ResponseCode int
+
+const (
+	ScardSSuccess                ResponseCode = 0x0
+	ScardFInternalError          ResponseCode = 0x80100001
+	ScardECancelled              ResponseCode = 0x80100002
+	ScardEInvalidHandle          ResponseCode = 0x80100003
+	ScardEInvalidParameter       ResponseCode = 0x80100004
+	ScardEInvalidTarget          ResponseCode = 0x80100005
+	ScardENoMemory               ResponseCode = 0x80100006
+	ScardFWaitedTooLong          ResponseCode = 0x80100007
+	ScardEInsufficientBuffer     ResponseCode = 0x80100008
+	ScardEUnknownReader          ResponseCode = 0x80100009
+	ScardETimeout                ResponseCode = 0x8010000a
+	ScardESharingViolation       ResponseCode = 0x8010000b
+	ScardENoSmartcard            ResponseCode = 0x8010000c
+	ScardEUnknownCard            ResponseCode = 0x8010000d
+	ScardECantDispose            ResponseCode = 0x8010000e
+	ScardEProtoMismatch          ResponseCode = 0x8010000f
+	ScardENotReady               ResponseCode = 0x80100010
+	ScardEInvalidValue           ResponseCode = 0x80100011
+	ScardESystemCancelled        ResponseCode = 0x80100012
+	ScardFCommError              ResponseCode = 0x80100013
+	ScardFUnknownError           ResponseCode = 0x80100014
+	ScardEInvalidAtr             ResponseCode = 0x80100015
+	ScardENotTransacted          ResponseCode = 0x80100016
+	ScardEReaderUnavailable      ResponseCode = 0x80100017
+	ScardEPciTooSmall            ResponseCode = 0x80100019
+	ScardEReaderUnsupported      ResponseCode = 0x8010001a
+	ScardEDuplicateReader        ResponseCode = 0x8010001b
+	ScardECardUnsupported        ResponseCode = 0x8010001c
+	ScardENoService              ResponseCode = 0x8010001d
+	ScardEServiceStopped         ResponseCode = 0x8010001e
+	ScardENoReadersAvailable     ResponseCode = 0x8010002e
+	ScardEUnsupportedFeature     ResponseCode = 0x8010001f
+	ScardWUnsupportedCard        ResponseCode = 0x80100065
+	ScardWUnresponsiveCard       ResponseCode = 0x80100066
+	ScardWUnpoweredCard          ResponseCode = 0x80100067
+	ScardWResetCard              ResponseCode = 0x80100068
+	ScardWRemovedCard            ResponseCode = 0x80100069
+	ScardWSecurityViolation      ResponseCode = 0x8010006a
+	ScardWWrongChv               ResponseCode = 0x8010006b
+	ScardWChvBlocked             ResponseCode = 0x8010006c
+	ScardWEof                    ResponseCode = 0x8010006d
+	ScardWCancelledByUser        ResponseCode = 0x8010006e
+	ScardWCardNotAuthenticated   ResponseCode = 0x8010006f
+	ScardEUnexpected             ResponseCode = 0x8010001f
+	ScardEIccInstallation        ResponseCode = 0x80100020
+	ScardEIccCreateorder         ResponseCode = 0x80100021
+	ScardEDirNotFound            ResponseCode = 0x80100023
+	ScardEFileNotFound           ResponseCode = 0x80100024
+	ScardENoDir                  ResponseCode = 0x80100025
+	ScardENoFile                 ResponseCode = 0x80100026
+	ScardENoAccess               ResponseCode = 0x80100027
+	ScardEWriteTooMany           ResponseCode = 0x80100028
+	ScardEBadSeek                ResponseCode = 0x80100029
+	ScardEInvalidChv             ResponseCode = 0x8010002a
+	ScardEUnknownResMng          ResponseCode = 0x8010002b
+	ScardENoSuchCertificate      ResponseCode = 0x8010002c
+	ScardECertificateUnavailable ResponseCode = 0x8010002d
+	ScardECommDataLost           ResponseCode = 0x8010002f
+	ScardENoKeyContainer         ResponseCode = 0x80100030
+	ScardEServerTooBusy          ResponseCode = 0x80100031
+	ScardPShutdown               ResponseCode = 0x80100018
+)
+
+const Infinite int = 0xffffffff
