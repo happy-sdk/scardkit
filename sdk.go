@@ -71,13 +71,26 @@ func (s *SDK) Run() (err error) {
 		return
 	}
 
-	states := []pcsc.ReaderState{
-		{
-			Reader:       s.readers[0].name, // Replace with the actual reader name
+	s.mu.RLock()
+	readers := s.readers
+	s.mu.RUnlock()
+	var states []pcsc.ReaderState
+	for _, reader := range readers {
+		if !reader.Use {
+			continue
+		}
+		states = append(states, pcsc.ReaderState{
+			Reader:       reader.name, // Replace with the actual reader name
 			CurrentState: pcsc.ScardStateUnaware,
-		},
+		})
 	}
 
+	if len(states) == 0 {
+		err = fmt.Errorf("%w: no readers enabled", Error)
+		s.stop(err)
+		s.wg.Wait()
+		return
+	}
 runner:
 	for {
 		select {

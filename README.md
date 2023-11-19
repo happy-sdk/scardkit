@@ -31,8 +31,11 @@ func main() {
     os.Exit(1)
   }
 
+  // Default behavior: Automatically selects the first available reader 
+  // if no SelectReader callback is set.
   sdk.SelectReader(func(rs []nfcsdk.Reader) ([]nfcsdk.Reader, error) {
-    logger.Info("select default reader")
+    logger.Info("select first reader")
+		rs[0].Use = true
     return rs, nil
   })
 
