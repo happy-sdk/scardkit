@@ -121,3 +121,31 @@ const (
 	ScardStateMute        ScardState = C.SCARD_STATE_MUTE
 	ScardStateUnpowered   ScardState = C.SCARD_STATE_UNPOWERED
 )
+
+type ScardSharedMode dword
+
+const (
+	ScardShareExclusive ScardSharedMode = C.SCARD_SHARE_EXCLUSIVE
+	ScardShareShared    ScardSharedMode = C.SCARD_SHARE_SHARED
+	ScardShareDirect    ScardSharedMode = C.SCARD_SHARE_DIRECT
+)
+
+type ScardProtocol dword
+
+const (
+	ScardProtocolUndefined ScardProtocol = C.SCARD_PROTOCOL_UNDEFINED
+	ScardProtocolT0        ScardProtocol = C.SCARD_PROTOCOL_T0
+	ScardProtocolT1        ScardProtocol = C.SCARD_PROTOCOL_T1
+	ScardProtocolRaw       ScardProtocol = C.SCARD_PROTOCOL_RAW
+	ScardProtocolT15       ScardProtocol = C.SCARD_PROTOCOL_T15
+	ScardProtocolAny       ScardProtocol = C.SCARD_PROTOCOL_ANY
+)
+
+type ScardDisposition dword
+
+const (
+	ScardLeaveCard   ScardDisposition = C.SCARD_LEAVE_CARD
+	ScardResetCard   ScardDisposition = C.SCARD_RESET_CARD
+	ScardUnpowerCard ScardDisposition = C.SCARD_UNPOWER_CARD
+	ScardEjectCard   ScardDisposition = C.SCARD_EJECT_CARD
+)

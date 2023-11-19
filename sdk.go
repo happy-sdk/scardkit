@@ -97,20 +97,34 @@ runner:
 		case <-s.ctx.Done():
 			break runner
 		default:
+			// check is context valid
+			if err = s.hctx.IsValid(); err != nil {
+				s.error(err)
+				break runner
+			}
 			err = s.hctx.GetStatusChange(states, -1)
 			if err != nil {
 				s.error(err)
 				break runner
 			}
+
 			for i := range states {
 				states[i].CurrentState = states[i].EventState
+				if states[i].EventState&pcsc.ScardStatePresent != 0 {
+					s.debug("card is present in the reader.")
+					// check again context mat get invalid
+					if err = s.hctx.IsValid(); err != nil {
+						s.error(err)
+						break runner
+					}
+
+					s.handleCard(states[i].Reader)
+
+				} else {
+					s.debug("no card present, waiting...")
+				}
 			}
-			if states[0].EventState&pcsc.ScardStatePresent != 0 {
-				s.debug("card is present in the reader.")
-				break runner
-			} else {
-				s.debug("no card present, checking again...")
-			}
+
 		}
 
 	}
@@ -189,6 +203,21 @@ func (s *SDK) dispose() {
 	}
 
 	s.debug("sdk disposed")
+}
+
+func (s *SDK) handleCard(readerName string) {
+	card, err := s.hctx.Connect(readerName, pcsc.ScardShareExclusive, pcsc.ScardProtocolAny)
+	if err != nil {
+		s.error(err)
+		return
+	}
+	s.debug("card connected", slog.String("protocols", card.Protocol().String()))
+
+	if err := card.Disconnect(pcsc.ScardResetCard); err != nil {
+		s.error(err)
+		return
+	}
+	s.debug("card disconnected")
 }
 
 const logPrefix = "nfc: "

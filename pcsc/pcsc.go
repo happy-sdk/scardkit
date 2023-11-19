@@ -59,6 +59,10 @@ func (hctx *HContext) Cancel() error {
 	return SCardCancel(hctx)
 }
 
+func (hctx *HContext) Connect(reader string, mode ScardSharedMode, protocol ScardProtocol) (*Card, error) {
+	return SCardConnect(hctx, reader, mode, protocol)
+}
+
 func SCardEstablishContext(scope ScardScope) (*HContext, error) {
 	hctx, rv := sCardEstablishContext(scope, nil, nil)
 	if err := rvToError(rv); err != nil {
@@ -93,6 +97,15 @@ func SCardGetStatusChange(hctx *HContext, states []ReaderState, timeout time.Dur
 
 func SCardCancel(hctx *HContext) error {
 	return rvToError(sCardCancel(hctx.hContext))
+}
+
+func SCardConnect(hctx *HContext, reader string, mode ScardSharedMode, protocol ScardProtocol) (*Card, error) {
+	handle, aprotocol, rv := sCardConnect(hctx.hContext, reader, mode, protocol)
+	if err := rvToError(rv); err != nil {
+		return nil, err
+	}
+
+	return &Card{handle: handle, protocol: aprotocol}, nil
 }
 
 func rvToError(rv returnValue) error {
@@ -154,4 +167,50 @@ func (s ScardState) String() string {
 	}
 
 	return strings.Join(states, ", ")
+}
+
+func (p ScardProtocol) String() string {
+	protocols := []string{}
+
+	if p&ScardProtocolUndefined != 0 {
+		protocols = append(protocols, "Undefined")
+	}
+	if p&ScardProtocolT0 != 0 {
+		protocols = append(protocols, "T0")
+	}
+	if p&ScardProtocolT1 != 0 {
+		protocols = append(protocols, "T1")
+	}
+	if p&ScardProtocolRaw != 0 {
+		protocols = append(protocols, "Raw")
+	}
+	if p&ScardProtocolT15 != 0 {
+		protocols = append(protocols, "T15")
+	}
+	if p&ScardProtocolAny != 0 {
+		protocols = append(protocols, "Any")
+	}
+
+	if len(protocols) == 0 {
+		return "No Protocol"
+	}
+
+	return strings.Join(protocols, ", ")
+}
+
+type Card struct {
+	handle   uintptr
+	protocol ScardProtocol
+}
+
+func (c *Card) Protocol() ScardProtocol {
+	return c.protocol
+}
+
+func (c *Card) Disconnect(d ScardDisposition) error {
+	rv := sCardDisconnect(c.handle, d)
+	if err := rvToError(rv); err != nil {
+		return err
+	}
+	return nil
 }

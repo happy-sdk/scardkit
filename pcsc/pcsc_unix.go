@@ -115,3 +115,22 @@ func sCardCancel(hctx hContext) returnValue {
 	rv := C.SCardCancel(C.SCARDCONTEXT(hctx))
 	return returnValue(rv)
 }
+
+func sCardFreeMemory(hctx hContext, pvMem unsafe.Pointer) returnValue {
+	rv := C.SCardFreeMemory(C.SCARDCONTEXT(hctx), C.LPCVOID(pvMem))
+	return returnValue(rv)
+}
+
+func sCardConnect(hctx hContext, reader string, mode ScardSharedMode, protocol ScardProtocol) (uintptr, ScardProtocol, returnValue) {
+	var handle C.SCARDHANDLE
+	var aprotocol C.DWORD
+	creader := C.CString(reader)
+
+	rv := C.SCardConnect(C.SCARDCONTEXT(hctx), C.LPCSTR(creader), C.DWORD(mode), C.DWORD(protocol), &handle, &aprotocol)
+	return uintptr(handle), ScardProtocol(aprotocol), returnValue(rv)
+}
+
+func sCardDisconnect(handle uintptr, d ScardDisposition) returnValue {
+	rv := C.SCardDisconnect(C.SCARDHANDLE(handle), C.DWORD(d))
+	return returnValue(rv)
+}
