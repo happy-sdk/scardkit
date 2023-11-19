@@ -10,6 +10,9 @@ package pcsc
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+	"unsafe"
 )
 
 // Error maps PCSC Lite C errorCodes
@@ -48,14 +51,12 @@ func (hctx *HContext) ListReaders() ([]string, error) {
 	return SCardListReaders(hctx)
 }
 
-func rvToError(rv returnValue) error {
-	if err, known := cerrors[rv]; known {
-		if errors.Is(err, ErrScardSSuccess) {
-			return nil
-		}
-		return err
-	}
-	return fmt.Errorf("%w: unknown return value %X", ErrScardFUnknownError, rv)
+func (hctx *HContext) GetStatusChange(states []ReaderState, timeout time.Duration) error {
+	return SCardGetStatusChange(hctx, states, timeout)
+}
+
+func (hctx *HContext) Cancel() error {
+	return SCardCancel(hctx)
 }
 
 func SCardEstablishContext(scope ScardScope) (*HContext, error) {
@@ -80,4 +81,77 @@ func SCardListReaders(hctx *HContext) ([]string, error) {
 		return nil, err
 	}
 	return readers, nil
+}
+
+func SCardGetStatusChange(hctx *HContext, states []ReaderState, timeout time.Duration) error {
+	rv := sCardGetStatusChange(hctx.hContext, states, timeout)
+	if err := rvToError(rv); err != nil {
+		return err
+	}
+	return nil
+}
+
+func SCardCancel(hctx *HContext) error {
+	return rvToError(sCardCancel(hctx.hContext))
+}
+
+func rvToError(rv returnValue) error {
+	if err, known := cerrors[rv]; known {
+		if errors.Is(err, ErrScardSSuccess) {
+			return nil
+		}
+		return err
+	}
+	return fmt.Errorf("%w: unknown return value %X", ErrScardFUnknownError, rv)
+}
+
+type ReaderState struct {
+	userData     unsafe.Pointer // ignore for now
+	Reader       string
+	CurrentState ScardState
+	EventState   ScardState
+	Atr          [MaxAtrSize]byte
+}
+
+func (s ScardState) String() string {
+	var states []string
+
+	if s&ScardStateUnaware != ScardStateUnaware {
+		states = append(states, "Unaware")
+	}
+	if s&ScardStateIgnore != 0 {
+		states = append(states, "Ignore")
+	}
+	if s&ScardStateChanged != 0 {
+		states = append(states, "Changed")
+	}
+	if s&ScardStateUnknown != 0 {
+		states = append(states, "Unknown")
+	}
+	if s&ScardStateUnavailable != 0 {
+		states = append(states, "Unavailable")
+	}
+	if s&ScardStateEmpty != 0 {
+		states = append(states, "Empty")
+	}
+	if s&ScardStatePresent != 0 {
+		states = append(states, "Present")
+	}
+	if s&ScardStateAtrMatch != 0 {
+		states = append(states, "AtrMatch")
+	}
+	if s&ScardStateExclusive != 0 {
+		states = append(states, "Exclusive")
+	}
+	if s&ScardStateInUse != 0 {
+		states = append(states, "InUse")
+	}
+	if s&ScardStateMute != 0 {
+		states = append(states, "Mute")
+	}
+	if s&ScardStateUnpowered != 0 {
+		states = append(states, "Unpowered")
+	}
+
+	return strings.Join(states, ", ")
 }

@@ -14,6 +14,11 @@ package pcsc
 */
 import "C"
 
+const (
+	MaxAtrSize = C.MAX_ATR_SIZE
+	Infinite   = C.INFINITE
+)
+
 type (
 	long         C.LONG
 	scardContext C.SCARDCONTEXT
@@ -100,51 +105,19 @@ const (
 	ScardScopeSystem   ScardScope = C.SCARD_SCOPE_SYSTEM
 )
 
-// type ShareType int
+type ScardState dword
 
-// const (
-// 	ScardShareShared    ShareType = C.SCARD_SHARE_SHARED
-// 	ScardShareExclusive ShareType = C.SCARD_SHARE_EXCLUSIVE
-// 	ScardShareDirect    ShareType = C.SCARD_SHARE_DIRECT
-// )
-
-// type DispositionType int
-
-// const (
-// 	ScardLeaveCard   DispositionType = C.SCARD_LEAVE_CARD
-// 	ScardResetCard   DispositionType = C.SCARD_RESET_CARD
-// 	ScardUnpowerCard DispositionType = C.SCARD_UNPOWER_CARD
-// 	ScardEjectCard   DispositionType = C.SCARD_EJECT_CARD
-// )
-
-// type StateType int
-
-// const (
-// 	ScardStateUnaware     StateType = C.SCARD_STATE_UNAWARE
-// 	ScardStateIgnore      StateType = C.SCARD_STATE_IGNORE
-// 	ScardStateChanged     StateType = C.SCARD_STATE_CHANGED
-// 	ScardStateUnknown     StateType = C.SCARD_STATE_UNKNOWN
-// 	ScardStateUnavailable StateType = C.SCARD_STATE_UNAVAILABLE
-// 	ScardStateEmpty       StateType = C.SCARD_STATE_EMPTY
-// 	ScardStatePresent     StateType = C.SCARD_STATE_PRESENT
-// 	ScardStateAtrMatch    StateType = C.SCARD_STATE_ATRMATCH
-// 	ScardStateExclusive   StateType = C.SCARD_STATE_EXCLUSIVE
-// 	ScardStateInUse       StateType = C.SCARD_STATE_INUSE
-// 	ScardStateMute        StateType = C.SCARD_STATE_MUTE
-// )
-
-// type ProtocolType int
-
-// const (
-// 	ScardProtocolUnset     ProtocolType = C.SCARD_PROTOCOL_UNSET
-// 	ScardProtocolT0        ProtocolType = C.SCARD_PROTOCOL_T0
-// 	ScardProtocolT1        ProtocolType = C.SCARD_PROTOCOL_T1
-// 	ScardProtocolRaw       ProtocolType = C.SCARD_PROTOCOL_RAW
-// 	ScardProtocolT15       ProtocolType = C.SCARD_PROTOCOL_T15
-// 	ScardProtocolAny       ProtocolType = C.SCARD_PROTOCOL_ANY
-// 	ScardProtocolUndefined ProtocolType = C.SCARD_PROTOCOL_UNDEFINED
-// )
-
-// type ErrorCode int
-
-// const Infinite int = C.INFINITE
+const (
+	ScardStateUnaware     ScardState = C.SCARD_STATE_UNAWARE
+	ScardStateIgnore      ScardState = C.SCARD_STATE_IGNORE
+	ScardStateChanged     ScardState = C.SCARD_STATE_CHANGED
+	ScardStateUnknown     ScardState = C.SCARD_STATE_UNKNOWN
+	ScardStateUnavailable ScardState = C.SCARD_STATE_UNAVAILABLE
+	ScardStateEmpty       ScardState = C.SCARD_STATE_EMPTY
+	ScardStatePresent     ScardState = C.SCARD_STATE_PRESENT
+	ScardStateAtrMatch    ScardState = C.SCARD_STATE_ATRMATCH
+	ScardStateExclusive   ScardState = C.SCARD_STATE_EXCLUSIVE
+	ScardStateInUse       ScardState = C.SCARD_STATE_INUSE
+	ScardStateMute        ScardState = C.SCARD_STATE_MUTE
+	ScardStateUnpowered   ScardState = C.SCARD_STATE_UNPOWERED
+)

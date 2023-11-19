@@ -53,7 +53,7 @@ func (s *SDK) Run() (err error) {
 	if err != nil {
 		s.stop(err)
 		s.wg.Wait()
-		return err
+		return
 	}
 
 	// Select readers
@@ -68,11 +68,44 @@ func (s *SDK) Run() (err error) {
 	if err != nil {
 		s.stop(err)
 		s.wg.Wait()
-		return err
+		return
+	}
+
+	states := []pcsc.ReaderState{
+		{
+			Reader:       s.readers[0].name, // Replace with the actual reader name
+			CurrentState: pcsc.ScardStateUnaware,
+		},
+	}
+
+runner:
+	for {
+		select {
+		case <-s.ctx.Done():
+			break runner
+		default:
+			err = s.hctx.GetStatusChange(states, -1)
+			if err != nil {
+				s.error(err)
+				break runner
+			}
+			for i := range states {
+				states[i].CurrentState = states[i].EventState
+			}
+			if states[0].EventState&pcsc.ScardStatePresent != 0 {
+				s.debug("card is present in the reader.")
+				break runner
+			} else {
+				s.debug("no card present, checking again...")
+			}
+		}
+
 	}
 
 	s.wg.Wait() // Wait for shutdown and cleanup
-	return nil
+
+	s.debug("exiting")
+	return
 }
 
 // SelectReader allows for specifying a callback function (fn) that determines the selection
@@ -130,12 +163,15 @@ func (s *SDK) dispose() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.disposed = true
-	s.debug("disposing")
+	s.debug("disposing...")
 	if s.hctx != nil {
+		s.debug("cancel pending actions")
+		if err := s.hctx.Cancel(); err != nil {
+			s.error(err)
+		}
+		s.debug("released scard context")
 		if err := s.hctx.Release(); err != nil {
 			s.error(err)
-		} else {
-			s.debug("scard context released")
 		}
 	}
 
