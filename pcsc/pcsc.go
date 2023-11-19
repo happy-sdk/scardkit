@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -108,6 +109,19 @@ func SCardConnect(hctx *HContext, reader string, mode ScardSharedMode, protocol 
 	return &Card{handle: handle, protocol: aprotocol}, nil
 }
 
+func SCardStatus(cardHandle uintptr) (CardStatus, error) {
+	reader, state, protocol, atr, rv := sCardStatus(cardHandle)
+	if err := rvToError(rv); err != nil {
+		return CardStatus{}, err
+	}
+	return CardStatus{
+		Reader:   reader,
+		State:    state,
+		Protocol: protocol,
+		Atr:      atr,
+	}, nil
+}
+
 func rvToError(rv returnValue) error {
 	if err, known := cerrors[rv]; known {
 		if errors.Is(err, ErrScardSSuccess) {
@@ -198,9 +212,42 @@ func (p ScardProtocol) String() string {
 	return strings.Join(protocols, ", ")
 }
 
+func (cs ScardCardState) String() string {
+	var parts []string
+
+	if cs&StateUnknown != 0 {
+		parts = append(parts, "Unknown")
+	}
+	if cs&StateAbsent != 0 {
+		parts = append(parts, "Absent")
+	}
+	if cs&StatePresent != 0 {
+		parts = append(parts, "Present")
+	}
+	if cs&StateSwallowed != 0 {
+		parts = append(parts, "Swallowed")
+	}
+	if cs&StatePowered != 0 {
+		parts = append(parts, "Powered")
+	}
+	if cs&StateNegotiable != 0 {
+		parts = append(parts, "Negotiable")
+	}
+	if cs&StateSpecific != 0 {
+		parts = append(parts, "Specific")
+	}
+
+	if len(parts) == 0 {
+		return fmt.Sprintf("Unknown CardState (0x%X)", cs)
+	}
+	return strings.Join(parts, ", ")
+}
+
 type Card struct {
+	mu       sync.Mutex
 	handle   uintptr
 	protocol ScardProtocol
+	status   CardStatus
 }
 
 func (c *Card) Protocol() ScardProtocol {
@@ -213,4 +260,29 @@ func (c *Card) Disconnect(d ScardDisposition) error {
 		return err
 	}
 	return nil
+}
+
+func (c *Card) CurrentStatus() CardStatus {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	status := c.status
+	return status
+}
+
+func (c *Card) RefreshStatus() error {
+	status, err := SCardStatus(c.handle)
+	if err != nil {
+		return err
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.status = status
+	return nil
+}
+
+type CardStatus struct {
+	Reader   string
+	State    ScardCardState
+	Protocol ScardProtocol
+	Atr      []byte
 }

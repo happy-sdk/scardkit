@@ -134,3 +134,28 @@ func sCardDisconnect(handle uintptr, d ScardDisposition) returnValue {
 	rv := C.SCardDisconnect(C.SCARDHANDLE(handle), C.DWORD(d))
 	return returnValue(rv)
 }
+
+// SCardStatus wraps the SCardStatus function
+func sCardStatus(cardHandle uintptr) (string, ScardCardState, ScardProtocol, []byte, returnValue) {
+	var readerName [MaxReadername]C.char
+	var readerLen C.ulong = C.DWORD(MaxReadername)
+	var state, protocol C.DWORD
+	var atr [MaxAtrSize]C.uchar
+	var atrLen C.ulong = C.DWORD(MaxAtrSize)
+
+	rv := C.SCardStatus(
+		C.SCARDHANDLE(cardHandle),
+		&readerName[0],
+		&readerLen,
+		&state,
+		&protocol,
+		&atr[0],
+		&atrLen,
+	)
+
+	rReaderName := strings.TrimRight(C.GoStringN(&readerName[0], C.int(readerLen)), "\x00")
+	rState := ScardCardState(state)
+	rProtocol := ScardProtocol(protocol)
+	rAtr := C.GoBytes(unsafe.Pointer(&atr[0]), C.int(atrLen))
+	return rReaderName, rState, rProtocol, rAtr, returnValue(rv)
+}

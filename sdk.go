@@ -213,6 +213,17 @@ func (s *SDK) handleCard(readerName string) {
 	}
 	s.debug("card connected", slog.String("protocols", card.Protocol().String()))
 
+	if err := card.RefreshStatus(); err != nil {
+		s.error(err)
+		return
+	}
+	status := card.CurrentStatus()
+	s.info("card status",
+		slog.String("state", status.State.String()),
+		slog.String("protocol", status.Protocol.String()),
+		slog.String("reader", status.Reader),
+		slog.String("atr", FormatByteSlice(status.Atr)),
+	)
 	if err := card.Disconnect(pcsc.ScardResetCard); err != nil {
 		s.error(err)
 		return

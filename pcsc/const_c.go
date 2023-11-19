@@ -15,8 +15,9 @@ package pcsc
 import "C"
 
 const (
-	MaxAtrSize = C.MAX_ATR_SIZE
-	Infinite   = C.INFINITE
+	MaxAtrSize    = C.MAX_ATR_SIZE
+	MaxReadername = C.MAX_READERNAME
+	Infinite      = C.INFINITE
 )
 
 type (
@@ -120,6 +121,18 @@ const (
 	ScardStateInUse       ScardState = C.SCARD_STATE_INUSE
 	ScardStateMute        ScardState = C.SCARD_STATE_MUTE
 	ScardStateUnpowered   ScardState = C.SCARD_STATE_UNPOWERED
+)
+
+type ScardCardState dword
+
+const (
+	StateUnknown    ScardCardState = C.SCARD_UNKNOWN
+	StateAbsent     ScardCardState = C.SCARD_ABSENT
+	StatePresent    ScardCardState = C.SCARD_PRESENT
+	StateSwallowed  ScardCardState = C.SCARD_SWALLOWED
+	StatePowered    ScardCardState = C.SCARD_POWERED
+	StateNegotiable ScardCardState = C.SCARD_NEGOTIABLE
+	StateSpecific   ScardCardState = C.SCARD_SPECIFIC
 )
 
 type ScardSharedMode dword
