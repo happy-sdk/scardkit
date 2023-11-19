@@ -1,3 +1,7 @@
+// Copyright 2023 The Happy Authors
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file.
+
 package generator
 
 import (
@@ -7,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // Fatal logs the provided message as an error and then exits the program with exit code 1.
@@ -97,14 +102,24 @@ func (g *Generator) Finalize() {
 }
 
 func (g *Generator) Generate() {
-	g.generatePKG()
-	g.generateNDEF()
-	g.generatePCSC()
+	g.pkg()
+	g.ndef()
+	g.pcsc()
 }
 
 func (g *Generator) info() slog.Attr {
 	return slog.Group(
 		"generator",
+		slog.String("os", g.os),
 		slog.String("wd", g.wd),
+		slog.String("temp", g.temp),
 	)
+}
+
+func ConvertNameToCamelCase(name string) string {
+	parts := strings.Split(name, "_")
+	for i, part := range parts {
+		parts[i] = strings.Title(strings.ToLower(part))
+	}
+	return strings.Join(parts, "")
 }
