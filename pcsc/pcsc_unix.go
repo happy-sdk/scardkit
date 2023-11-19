@@ -159,3 +159,13 @@ func sCardStatus(cardHandle uintptr) (string, ScardCardState, ScardProtocol, []b
 	rAtr := C.GoBytes(unsafe.Pointer(&atr[0]), C.int(atrLen))
 	return rReaderName, rState, rProtocol, rAtr, returnValue(rv)
 }
+
+func sCardBeginTransaction(cardHandle uintptr) returnValue {
+	rv := C.SCardBeginTransaction(C.SCARDHANDLE(cardHandle))
+	return returnValue(rv)
+}
+
+func sCardEndTransaction(cardHandle uintptr, d ScardDisposition) returnValue {
+	rv := C.SCardEndTransaction(C.SCARDHANDLE(cardHandle), C.DWORD(d))
+	return returnValue(rv)
+}

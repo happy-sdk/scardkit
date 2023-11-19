@@ -283,8 +283,22 @@ func (c *Card) RefreshStatus() error {
 func (card *Card) Transmit(cmd []byte) ([]byte, error) {
 	return []byte{}, nil
 }
-func (card *Card) BeginTransaction() error               { return nil }
-func (card *Card) EndTransaction(ScardDisposition) error { return nil }
+
+func (card *Card) BeginTransaction() error {
+	rv := sCardBeginTransaction(card.handle)
+	if err := rvToError(rv); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (card *Card) EndTransaction(d ScardDisposition) error {
+	rv := sCardEndTransaction(card.handle, d)
+	if err := rvToError(rv); err != nil {
+		return err
+	}
+	return nil
+}
 
 type CardStatus struct {
 	Reader   string
