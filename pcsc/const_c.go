@@ -15,9 +15,10 @@ package pcsc
 import "C"
 
 const (
-	MaxAtrSize    = C.MAX_ATR_SIZE
-	MaxReadername = C.MAX_READERNAME
-	Infinite      = C.INFINITE
+	MaxAtrSize            = C.MAX_ATR_SIZE
+	MaxReadername         = C.MAX_READERNAME
+	Infinite              = C.INFINITE
+	MaxBufferSizeExtended = C.MAX_BUFFER_SIZE_EXTENDED
 )
 
 type (

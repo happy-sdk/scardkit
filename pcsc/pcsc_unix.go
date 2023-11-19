@@ -169,3 +169,33 @@ func sCardEndTransaction(cardHandle uintptr, d ScardDisposition) returnValue {
 	rv := C.SCardEndTransaction(C.SCARDHANDLE(cardHandle), C.DWORD(d))
 	return returnValue(rv)
 }
+
+func sCardTransmit(cardHandle uintptr, proto ScardProtocol, cmd []byte, rsp []byte) (int, returnValue) {
+	var sendPci *C.SCARD_IO_REQUEST
+	switch proto {
+	case ScardProtocolT0:
+		sendPci = C.SCARD_PCI_T0
+	case ScardProtocolT1:
+		sendPci = C.SCARD_PCI_T1
+	case ScardProtocolRaw:
+		sendPci = C.SCARD_PCI_RAW
+	// Add other protocols if needed
+	default:
+		return 0, returnValue(C.SCARD_E_PROTO_MISMATCH)
+	}
+
+	var recvPci C.SCARD_IO_REQUEST
+	var recvLen C.DWORD = C.DWORD(len(rsp))
+
+	rv := C.SCardTransmit(
+		C.SCARDHANDLE(cardHandle),
+		sendPci,
+		(*C.uchar)(unsafe.Pointer(&cmd[0])),
+		C.DWORD(len(cmd)),
+		&recvPci,
+		(*C.uchar)(unsafe.Pointer(&rsp[0])),
+		&recvLen,
+	)
+
+	return int(recvLen), returnValue(rv)
+}

@@ -281,7 +281,18 @@ func (c *Card) RefreshStatus() error {
 }
 
 func (card *Card) Transmit(cmd []byte) ([]byte, error) {
-	return []byte{}, nil
+	// Define a response buffer with a reasonable initial size.
+	// You may adjust the size based on your application's needs.
+	rsp := make([]byte, MaxBufferSizeExtended)
+
+	// Call sCardTransmit with the card's handle, protocol, command, and response buffer.
+	recvLen, rv := sCardTransmit(card.handle, card.protocol, cmd, rsp)
+	if err := rvToError(rv); err != nil {
+		return nil, err
+	}
+	// Trim the response slice to the actual length of the response.
+	rsp = rsp[:recvLen]
+	return rsp, nil
 }
 
 func (card *Card) BeginTransaction() error {
