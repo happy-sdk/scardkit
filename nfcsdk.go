@@ -18,6 +18,8 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/happy-sdk/nfcsdk/pcsc"
 )
 
 //go:generate go run internal/generator/main.go
@@ -104,4 +106,16 @@ func FormatByteSlice(slice []byte) string {
 	}
 
 	return b.String()
+}
+
+type CardHandler func(card Card) error
+
+type Card interface {
+	Protocol() pcsc.ScardProtocol
+	Disconnect(pcsc.ScardDisposition) error
+	CurrentStatus() pcsc.CardStatus
+	RefreshStatus() error
+	Transmit(cmd []byte) ([]byte, error)
+	BeginTransaction() error
+	EndTransaction(pcsc.ScardDisposition) error
 }

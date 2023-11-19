@@ -280,6 +280,12 @@ func (c *Card) RefreshStatus() error {
 	return nil
 }
 
+func (card *Card) Transmit(cmd []byte) ([]byte, error) {
+	return []byte{}, nil
+}
+func (card *Card) BeginTransaction() error               { return nil }
+func (card *Card) EndTransaction(ScardDisposition) error { return nil }
+
 type CardStatus struct {
 	Reader   string
 	State    ScardCardState

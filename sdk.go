@@ -9,7 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"runtime"
 	"sync"
+	"time"
 
 	"github.com/happy-sdk/nfcsdk/pcsc"
 )
@@ -22,6 +24,7 @@ type SDK struct {
 	disposed     bool
 	wg           sync.WaitGroup
 	readerSelect ReaderSelectFunc
+	cardHandler  CardHandler
 
 	hctx    *pcsc.HContext
 	readers []Reader
@@ -91,6 +94,7 @@ func (s *SDK) Run() (err error) {
 		s.wg.Wait()
 		return
 	}
+	s.info("started", slog.String("time", time.Now().String()))
 runner:
 	for {
 		select {
@@ -152,6 +156,16 @@ func (s *SDK) SelectReader(fn ReaderSelectFunc) {
 	s.readerSelect = fn
 }
 
+func (s *SDK) OnCardPresent(fn CardHandler) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cardHandler != nil {
+		s.warn("reader select callback can only be attached once")
+		return
+	}
+	s.cardHandler = fn
+}
+
 func (s *SDK) init() (err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -175,7 +189,7 @@ func (s *SDK) init() (err error) {
 			id:   i + 1,
 			name: readerName,
 		}
-		s.debug("found", slog.Group("reader", slog.Int("id", reader.id), slog.String("name", readerName)))
+		s.debug("found reader", slog.Group("reader", slog.Int("id", reader.id), slog.String("name", readerName)))
 		s.readers = append(s.readers, reader)
 	}
 
@@ -205,58 +219,82 @@ func (s *SDK) dispose() {
 	s.debug("sdk disposed")
 }
 
-func (s *SDK) handleCard(readerName string) {
+func (s *SDK) handleCard(readerName string) error {
 	card, err := s.hctx.Connect(readerName, pcsc.ScardShareExclusive, pcsc.ScardProtocolAny)
 	if err != nil {
 		s.error(err)
-		return
+		return nil
 	}
 	s.debug("card connected", slog.String("protocols", card.Protocol().String()))
 
 	if err := card.RefreshStatus(); err != nil {
 		s.error(err)
-		return
+		return nil
 	}
 	status := card.CurrentStatus()
-	s.info("card status",
+	s.info("connected card status",
 		slog.String("state", status.State.String()),
 		slog.String("protocol", status.Protocol.String()),
 		slog.String("reader", status.Reader),
 		slog.String("atr", FormatByteSlice(status.Atr)),
 	)
+
+	// Call user callback
+	s.mu.RLock()
+	handler := s.cardHandler
+	s.mu.RUnlock()
+	if handler != nil {
+		if err := handler(card); err != nil {
+			s.error(err)
+			return err
+		}
+	} else {
+		s.info("no card handler defined")
+	}
+	// Disconnect from card
 	if err := card.Disconnect(pcsc.ScardResetCard); err != nil {
 		s.error(err)
-		return
+		return nil
 	}
-	s.debug("card disconnected")
+
+	s.info("card disconnected")
+	return nil
 }
 
 const logPrefix = "nfc: "
 
 // LogAttrs is a more efficient version of [Logger.Log] that accepts only Attrs.
-func (s *SDK) Log(level slog.Level, msg string, args ...any) {
+func (s *SDK) log(level slog.Level, msg string, args ...any) {
 	if s.logger == nil {
 		return
 	}
+	if !s.logger.Enabled(context.Background(), level) {
+		return
+	}
+
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:]) // skip [Callers, Infof]
 	msg = logPrefix + msg
-	s.logger.Log(s.ctx, level, msg, args...)
+	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+	r.Add(args...)
+	_ = s.logger.Handler().Handle(context.Background(), r)
 }
 
 func (s *SDK) debug(msg string, args ...any) {
-	s.Log(slog.LevelDebug, msg, args...)
+	s.log(slog.LevelDebug, msg, args...)
 }
 
 func (s *SDK) info(msg string, args ...any) {
-	s.Log(slog.LevelInfo, msg, args...)
+	s.log(slog.LevelInfo, msg, args...)
 }
 
 func (s *SDK) warn(msg string, args ...any) {
-	s.Log(slog.LevelWarn, msg, args...)
+	s.log(slog.LevelWarn, msg, args...)
 }
 
 func (s *SDK) error(err error) {
 	if err == nil {
 		return
 	}
-	s.Log(slog.LevelError, err.Error())
+	s.log(slog.LevelError, err.Error())
 }
