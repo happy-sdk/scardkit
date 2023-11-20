@@ -10,6 +10,7 @@ package pcsc
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -238,7 +239,7 @@ func (cs ScardCardState) String() string {
 	}
 
 	if len(parts) == 0 {
-		return fmt.Sprintf("Unknown CardState (0x%X)", cs)
+		return fmt.Sprintf("Unknown CardState (0x%X)", uint64(cs))
 	}
 	return strings.Join(parts, ", ")
 }
@@ -280,7 +281,7 @@ func (c *Card) RefreshStatus() error {
 	return nil
 }
 
-func (card *Card) Transmit(cmd []byte) ([]byte, error) {
+func (card *Card) Transmit(cmd []byte) (CardResponse, error) {
 	// Define a response buffer with a reasonable initial size.
 	// You may adjust the size based on your application's needs.
 	rsp := make([]byte, MaxBufferSizeExtended)
@@ -288,11 +289,23 @@ func (card *Card) Transmit(cmd []byte) ([]byte, error) {
 	// Call sCardTransmit with the card's handle, protocol, command, and response buffer.
 	recvLen, rv := sCardTransmit(card.handle, card.protocol, cmd, rsp)
 	if err := rvToError(rv); err != nil {
-		return nil, err
+		return CardResponse{}, err
 	}
 	// Trim the response slice to the actual length of the response.
 	rsp = rsp[:recvLen]
-	return rsp, nil
+	if len(rsp) < 2 {
+		return CardResponse{}, fmt.Errorf("%w: no sw1 and sw2 returned", ErrResponse)
+	}
+	pllen := len(rsp) - 2
+
+	status := rsp[pllen:]
+	response := CardResponse{}
+	response.status = SW1SW2(status)
+	response.payload = rsp[:pllen]
+	if !response.Status().Success() {
+		return response, response.Status().error()
+	}
+	return response, nil
 }
 
 func (card *Card) BeginTransaction() error {
@@ -316,4 +329,140 @@ type CardStatus struct {
 	State    ScardCardState
 	Protocol ScardProtocol
 	Atr      []byte
+}
+
+const ZeroByte = 0x00
+
+var success = SW1SW2{0x90, 0x00}
+
+var (
+	ErrResponse = errors.New("error")
+)
+
+var responses = map[SW1SW2]string{
+	success:          "success",
+	{0x62, ZeroByte}: "no information given",
+	{0x62, 0x81}:     "returned data may be corrupted",
+	{0x62, 0x82}:     "the end of the file has been reached before the end of reading",
+	{0x62, 0x83}:     "invalid DF",
+	{0x62, 0x84}:     "selected file is not valid - file descriptor error",
+	{0x63, ZeroByte}: "authentification failed - invalid secret code or forbidden value",
+	{0x63, 0x81}:     "file filled up by the last write",
+	{0x65, 0x03}:     "memory failure: EEPROM read/write or hardware problem",
+	{0x65, 0x81}:     "write problem / memory failure / unknown mode",
+	{0x67, ZeroByte}: "incorrect length or address range",
+	{0x68, ZeroByte}: "the request function is not supported by the card",
+	{0x68, 0x81}:     "logical channel not supported",
+	{0x68, 0x82}:     "secure messaging not supported ",
+	{0x69, ZeroByte}: "no successful transaction executed during session",
+	{0x69, 0x81}:     "cannot select indicated file, command not compatible with file organization",
+	{0x69, 0x82}:     "access conditions not fulfilled",
+	{0x69, 0x83}:     "secret code locked",
+	{0x69, 0x84}:     "referenced data invalidated",
+	{0x69, 0x85}:     "no currently selected EF, no command to monitor / no Transaction Manager File",
+	{0x69, 0x86}:     "command not allowed (no current EF)",
+	{0x69, 0x87}:     "expected SM data objects missing",
+	{0x69, 0x88}:     "SM data objects incorrect",
+	{0x6A, ZeroByte}: "bytes P1 and/or P2 are incorrect.",
+	{0x6A, 0x80}:     "the parameters in the data field are incorrect",
+	{0x6A, 0x81}:     "card is blocked or command not supported",
+	{0x6A, 0x82}:     "file not found",
+	{0x6A, 0x83}:     "record not found",
+	{0x6A, 0x84}:     "there is insufficient memory space in record or file",
+	{0x6A, 0x85}:     "Lc inconsistent with TLV structure",
+	{0x6A, 0x86}:     "incorrect parameters P1-P2",
+	{0x6A, 0x87}:     "the P3 value is not consistent with the P1 and P2 values",
+	{0x6A, 0x88}:     "referenced data not found",
+	{0x6B, ZeroByte}: "incorrect reference; illegal address; invalid P1 or P2 parameter",
+	{0x6D, ZeroByte}: "command not allowed. invalid instruction byte (INS)",
+	{0x6E, ZeroByte}: "incorrect application (CLA parameter of a command)",
+	{0x6F, ZeroByte}: "checking error",
+	{0x91, ZeroByte}: "purse balance error cannot perform transaction",
+	{0x91, 0x02}:     "purse balance error",
+	{0x92, 0x02}:     "write problem / memory failure",
+	{0x92, 0x40}:     "error, memory problem",
+	{0x94, 0x04}:     "purse selection error or invalid purse",
+	{0x94, 0x06}:     "invalid purse detected during the replacement debit step",
+	{0x94, 0x08}:     "key file selection error",
+	{0x94, ZeroByte}: "security warning",
+	{0x94, 0x04}:     "access authorization not fulfilled",
+	{0x94, 0x06}:     "access authorization in Debit not fulfilled for the replacement debit step",
+	{0x94, 0x20}:     "no temporary transaction key established",
+	{0x94, 0x34}:     "update SSD order sequence not respected",
+}
+
+type CardResponse struct {
+	status  SW1SW2
+	payload []byte
+}
+
+func (r CardResponse) Payload() []byte {
+	return r.payload
+}
+
+func (r CardResponse) Status() SW1SW2 {
+	return r.status
+}
+func (r CardResponse) SW1() byte {
+	return r.status.SW1()
+}
+func (r CardResponse) SW2() byte {
+	return r.status.SW2()
+}
+
+func (r CardResponse) LogAttr() slog.Attr {
+	return slog.Group("",
+		slog.String("status", r.status.String()),
+		slog.String("sw1", fmt.Sprintf("%02X", r.SW1())),
+		slog.String("sw2", fmt.Sprintf("%02X", r.SW2())),
+		slog.Int("payload.len", len(r.payload)),
+	)
+}
+
+type SW1SW2 [2]byte
+
+func (rs SW1SW2) error() error {
+	if rs.Success() {
+		return nil
+	}
+	return fmt.Errorf("%w: %s", ErrResponse, rs.String())
+}
+
+func (rs SW1SW2) SW1() byte {
+	return rs[0]
+}
+
+func (rs SW1SW2) SW2() byte {
+	return rs[1]
+}
+
+func (rs SW1SW2) Success() bool {
+	return rs == success || rs[0] == 0x9F
+}
+
+func (rs SW1SW2) String() string {
+	if msg, ok := responses[rs]; ok {
+		return msg
+	}
+	// handle other cases
+	switch rs[0] {
+	case 0x61:
+		return fmt.Sprintf("(%d) response bytes still available", rs[1])
+	case 0x63:
+		return fmt.Sprintf("command response code(%d)", rs[1])
+	case 0x67:
+		return fmt.Sprintf("incorrect parameter P3 (ISO code) %d", rs[1])
+	case 0x6C:
+		return fmt.Sprintf("incorrect P3 length %d", rs[1])
+	case 0x92:
+		return fmt.Sprintf("memory error %d", rs[1])
+	case 0x94:
+		return fmt.Sprintf("file error %d", rs[1])
+	case 0x98:
+		return fmt.Sprintf("security error %d", rs[1])
+	case 0x9F:
+		return fmt.Sprintf("success %d bytes of data available to be read via Get_Response", rs[1])
+	default:
+		return fmt.Sprintf("unknown response status: %X %X", rs[0], rs[1])
+	}
 }

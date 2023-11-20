@@ -39,6 +39,27 @@ func main() {
     return rs, nil
   })
 
+  // Reads card uid when card is present
+  sdk.OnCardPresent(func(card nfcsdk.Card) error {
+    logger.Info("--- HANDLE CARD PRESENT ---")
+    cmd, err := ntag.Cmd(ntag.CmdGetUID)
+    if err != nil {
+      return err
+    }
+
+    response, err := cmd.Transmit(card)
+    if err != nil {
+      return err
+    }
+
+    logger.Info(cmd.String(),
+      slog.String("uid", nfcsdk.FormatByteSlice(response.Payload())),
+      response.LogAttr(),
+    )
+    logger.Info("--- CARD HANDLE COMPLETED ---")
+    return nil
+  })
+
   if err := sdk.Run(); err != nil {
     return
   }
