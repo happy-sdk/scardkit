@@ -47,7 +47,7 @@ func main() {
       return err
     }
 
-    response, err := cmd.Transmit(card)
+    response, err := card.Transmit(cmd)
     if err != nil {
       return err
     }

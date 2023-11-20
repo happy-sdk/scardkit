@@ -13,7 +13,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/happy-sdk/nfcsdk"
 	"github.com/happy-sdk/nfcsdk/pcsc"
 )
 
@@ -105,93 +104,24 @@ var cmdBytes = map[CMD][2]byte{
 	CmdGetUID:         {0xFF, 0xCA}, // Class and Instruction byte for the Get UID command
 }
 
-type Command struct {
-	cmd     CMD
-	name    string
-	cla     byte   // Instruction class
-	ins     byte   // Instruction code
-	p1      byte   // Instruction parameter 1 for the command
-	p2      byte   // Instruction parameter 2 for the command
-	lc      []byte // Encodes the number (Nc) of bytes of command data to follow
-	le      []byte // Encodes the maximum number (Ne) of response bytes expected
-	payload []byte // payload
-}
-
 // Cmd creates command byte slice with optional payload
 // The function can accept a nil or empty payload and
 // it will handle such cases gracefully.
-func Cmd(c CMD) (*Command, error) {
+func Cmd(c CMD) (*pcsc.Command, error) {
 	cb, ok := cmdBytes[c]
 	if !ok {
 		return nil, fmt.Errorf("%w: %d", ErrUnknownCMD, c)
 	}
-	cmd, err := RawCmd(cb[0], cb[1], pcsc.ZeroByte, pcsc.ZeroByte)
-	if err != nil {
-		return nil, err
-	}
 
-	return cmd, nil
-}
+	cmd := pcsc.NewCmd(cb[0], cb[1], pcsc.ZeroByte, pcsc.ZeroByte)
 
-func RawCmd(cla, ins, p1, p2 byte) (*Command, error) {
-	cmd := &Command{
-		name: cmdNames[CmdRAW],
-		cmd:  CmdRAW,
-		cla:  cla,
-		ins:  ins,
-		p1:   p1,
-		p2:   p2,
-	}
 	for c, b := range cmdBytes {
-		if cmd.cla == b[0] && cmd.ins == b[1] {
-			cmd.cmd = c
+		if cb[0] == b[0] && cb[1] == b[1] {
 			if name, ok := cmdNames[c]; ok {
-				cmd.name = name
+				cmd.SetName(name)
 			}
 		}
 	}
+
 	return cmd, nil
-}
-
-// Name returns command name
-func (c *Command) Name() string {
-	return c.name
-}
-func (c *Command) SetLE(le []byte) {
-	c.le = le
-}
-
-// Bytes returns command byte slice with optional payload if present
-func (c *Command) Bytes() []byte {
-	// Start with the CLA, INS, P1, P2
-	cmd := []byte{c.cla, c.ins, c.p1, c.p2}
-
-	// If lc is not nil and payload is present, append the length and the payload
-	if c.lc != nil && len(c.payload) > 0 {
-		cmd = append(cmd, c.lc...)
-		cmd = append(cmd, c.payload...)
-	}
-	// If le is not nil, append it
-	if c.le != nil {
-		cmd = append(cmd, c.le...)
-	} else {
-		cmd = append(cmd, pcsc.ZeroByte)
-	}
-	return cmd
-}
-
-// String returns string representation of currect command
-func (c *Command) String() string {
-	str := c.name + " ["
-	str += nfcsdk.FormatByteSlice(c.Bytes())
-	str += "]"
-	return str
-}
-
-// Transmit command to card and retrun the response
-func (c *Command) Transmit(card nfcsdk.Card) (pcsc.CardResponse, error) {
-	if card == nil {
-		return pcsc.CardResponse{}, fmt.Errorf("%w: no card provided", Error)
-	}
-	return card.Transmit(c.Bytes())
 }

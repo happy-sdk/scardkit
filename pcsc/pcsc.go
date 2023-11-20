@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 	"unsafe"
+
+	"github.com/happy-sdk/nfcsdk/internal/helpers"
 )
 
 // Error maps PCSC Lite C errorCodes
@@ -281,13 +283,13 @@ func (c *Card) RefreshStatus() error {
 	return nil
 }
 
-func (card *Card) Transmit(cmd []byte) (CardResponse, error) {
+func (card *Card) Transmit(cmd *Command) (CardResponse, error) {
 	// Define a response buffer with a reasonable initial size.
 	// You may adjust the size based on your application's needs.
 	rsp := make([]byte, MaxBufferSizeExtended)
 
 	// Call sCardTransmit with the card's handle, protocol, command, and response buffer.
-	recvLen, rv := sCardTransmit(card.handle, card.protocol, cmd, rsp)
+	recvLen, rv := sCardTransmit(card.handle, card.protocol, cmd.Bytes(), rsp)
 	if err := rvToError(rv); err != nil {
 		return CardResponse{}, err
 	}
@@ -466,3 +468,66 @@ func (rs SW1SW2) String() string {
 		return fmt.Sprintf("unknown response status: %X %X", rs[0], rs[1])
 	}
 }
+
+type Command struct {
+	name    string
+	cla     byte   // Instruction class
+	ins     byte   // Instruction code
+	p1      byte   // Instruction parameter 1 for the command
+	p2      byte   // Instruction parameter 2 for the command
+	lc      []byte // Encodes the number (Nc) of bytes of command data to follow
+	le      []byte // Encodes the maximum number (Ne) of response bytes expected
+	payload []byte // payload
+}
+
+func NewCmd(cla, ins, p1, p2 byte) *Command {
+	cmd := &Command{
+		name: "RAW",
+		cla:  cla,
+		ins:  ins,
+		p1:   p1,
+		p2:   p2,
+	}
+
+	return cmd
+}
+
+// Name returns command name
+func (c *Command) Name() string {
+	return c.name
+}
+func (c *Command) SetName(name string) {
+	c.name = name
+}
+func (c *Command) SetLE(le []byte) {
+	c.le = le
+}
+
+// Bytes returns command byte slice with optional payload if present
+func (c *Command) Bytes() []byte {
+	// Start with the CLA, INS, P1, P2
+	cmd := []byte{c.cla, c.ins, c.p1, c.p2}
+
+	// If lc is not nil and payload is present, append the length and the payload
+	if c.lc != nil && len(c.payload) > 0 {
+		cmd = append(cmd, c.lc...)
+		cmd = append(cmd, c.payload...)
+	}
+	// If le is not nil, append it
+	if c.le != nil {
+		cmd = append(cmd, c.le...)
+	} else {
+		cmd = append(cmd, ZeroByte)
+	}
+	return cmd
+}
+
+// String returns string representation of currect command
+func (c *Command) String() string {
+	str := c.name + " ["
+	str += helpers.FormatByteSlice(c.Bytes())
+	str += "]"
+	return str
+}
+
+type CMD int
