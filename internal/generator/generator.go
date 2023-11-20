@@ -95,7 +95,7 @@ func (g *Generator) Finalize() {
 		fmtCmd := exec.Command("go", "fmt", "./...")
 		fmtCmd.Dir = g.wd
 		if err := fmtCmd.Run(); err != nil {
-			Fatal(fmt.Sprintf("failed to format code: %w", err))
+			Fatal(fmt.Sprintf("failed to format code: %s", err.Error()))
 		}
 		slog.Info("go fmt completed")
 	}

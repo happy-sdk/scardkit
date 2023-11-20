@@ -118,16 +118,9 @@ func Cmd(c CMD) (*pcsc.Command, error) {
 	return cmd, nil
 }
 
-func CmdGetUID() *pcsc.Command {
+func NewGetUIDCmd() *pcsc.Command {
 	cmd := pcsc.NewCmd(0xFF, 0xCA, pcsc.ZeroByte, pcsc.ZeroByte)
+	cmd.SetLe([]byte{7})
 	cmd.SetName("GET_UID")
-	return cmd
-}
-
-// CmdGetVersion
-// GET_VERSION, 60h
-func CmdGetVersion() *pcsc.Command {
-	cmd := pcsc.NewCustomCmd([]byte{0x60})
-	cmd.SetName("GET_VERSION")
 	return cmd
 }

@@ -246,6 +246,12 @@ func (s *SDK) handleCard(readerName string) error {
 	if handler != nil {
 		if err := handler(card); err != nil {
 			s.error(err)
+			// Disconnect from card
+			if err2 := card.Disconnect(pcsc.ScardResetCard); err2 != nil {
+				s.error(err2)
+				return errors.Join(err, err2)
+			}
+			s.info("card disconnected")
 			return err
 		}
 	} else {

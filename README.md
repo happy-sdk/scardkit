@@ -42,7 +42,7 @@ func main() {
   // Reads card uid when card is present
   sdk.OnCardPresent(func(card nfcsdk.Card) error {
     logger.Info("--- HANDLE CARD PRESENT ---")
-    cmdGetUID := ntag.CmdGetUID()
+    cmdGetUID := ntag.NewGetUIDCmd()
 
     response, err := card.Transmit(cmdGetUID)
     if err != nil {
