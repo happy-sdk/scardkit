@@ -291,12 +291,12 @@ func (card *Card) Transmit(cmd *Command) (CardResponse, error) {
 	// Call sCardTransmit with the card's handle, protocol, command, and response buffer.
 	recvLen, rv := sCardTransmit(card.handle, card.protocol, cmd.Bytes(), rsp)
 	if err := rvToError(rv); err != nil {
-		return CardResponse{}, err
+		return CardResponse{}, fmt.Errorf("%w: command %s", err, cmd.Name())
 	}
 	// Trim the response slice to the actual length of the response.
 	rsp = rsp[:recvLen]
 	if len(rsp) < 2 {
-		return CardResponse{}, fmt.Errorf("%w: no sw1 and sw2 returned", ErrResponse)
+		return CardResponse{}, fmt.Errorf("%w: no sw1 and sw2 returned for %s", ErrResponse, cmd.Name())
 	}
 	pllen := len(rsp) - 2
 
@@ -305,7 +305,7 @@ func (card *Card) Transmit(cmd *Command) (CardResponse, error) {
 	response.status = SW1SW2(status)
 	response.payload = rsp[:pllen]
 	if !response.Status().Success() {
-		return response, response.Status().error()
+		return response, fmt.Errorf("%s: %w", cmd.Name(), response.Status().error())
 	}
 	return response, nil
 }
@@ -525,7 +525,13 @@ func (c *Command) Bytes() []byte {
 // String returns string representation of currect command
 func (c *Command) String() string {
 	str := c.name + " ["
-	str += helpers.FormatByteSlice(c.Bytes())
+	cmd := c.Bytes()
+	if len(cmd) < 10 {
+		str += helpers.FormatByteSlice(cmd)
+	} else {
+		str += helpers.FormatByteSlice(cmd[:10])
+		str += "..."
+	}
 	str += "]"
 	return str
 }
