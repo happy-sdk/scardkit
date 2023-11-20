@@ -284,21 +284,31 @@ func (c *Card) RefreshStatus() error {
 }
 
 func (card *Card) Transmit(cmd *Command) (CardResponse, error) {
-	// Define a response buffer with a reasonable initial size.
-	// You may adjust the size based on your application's needs.
-	rsp := make([]byte, MaxBufferSizeExtended)
+	if cmd == nil {
+		return CardResponse{}, errors.New("no command provided to card.Transmit")
+	}
+	if cmd.err != nil {
+		return CardResponse{}, fmt.Errorf("%s: %w", cmd.name, cmd.err)
+	}
+	// Define a response buffer with a reasonable initial size for provided command.
+	rsp, err := cmd.newRespBuffer()
+	if err != nil {
+		return CardResponse{}, err
+	}
+	// rsp := make([]byte, MaxBufferSizeExtended)
 
 	// Call sCardTransmit with the card's handle, protocol, command, and response buffer.
 	recvLen, rv := sCardTransmit(card.handle, card.protocol, cmd.Bytes(), rsp)
 	if err := rvToError(rv); err != nil {
 		return CardResponse{}, fmt.Errorf("%w: command %s", err, cmd.Name())
 	}
+	fmt.Println("RESPONSE: ", helpers.FormatByteSlice(rsp))
 	// Trim the response slice to the actual length of the response.
 	rsp = rsp[:recvLen]
 	if len(rsp) < 2 {
 		return CardResponse{}, fmt.Errorf("%w: no sw1 and sw2 returned for %s", ErrResponse, cmd.Name())
 	}
-	pllen := len(rsp) - 2
+	pllen := len(rsp) - 2 // payload length
 
 	status := rsp[pllen:]
 	response := CardResponse{}
@@ -455,7 +465,7 @@ func (rs SW1SW2) String() string {
 	case 0x67:
 		return fmt.Sprintf("incorrect parameter P3 (ISO code) %d", rs[1])
 	case 0x6C:
-		return fmt.Sprintf("incorrect P3 length %d", rs[1])
+		return fmt.Sprintf("incorrect P3 length (%d) or response buffer to small", rs[1])
 	case 0x92:
 		return fmt.Sprintf("memory error %d", rs[1])
 	case 0x94:
@@ -479,6 +489,7 @@ type Command struct {
 	lc      []byte // Encodes the number (Nc) of bytes of command data to follow
 	le      []byte // Encodes the maximum number (Ne) of response bytes expected
 	payload []byte // payload
+	err     error
 }
 
 func NewCustomCmd(payload []byte) *Command {
@@ -508,8 +519,17 @@ func (c *Command) Name() string {
 func (c *Command) SetName(name string) {
 	c.name = name
 }
-func (c *Command) SetLE(le []byte) {
+
+func (c *Command) SetLe(le []byte) {
+	if l := len(le); l > 3 {
+		c.addErr(fmt.Errorf("(Le) invalid length %d [%s...]", l, helpers.FormatByteSlice(le[0:3])))
+		return
+	}
 	c.le = le
+}
+
+func (c *Command) addErr(err error) {
+	c.err = errors.Join(c.err, err)
 }
 
 // Bytes returns command byte slice with optional payload if present
@@ -546,4 +566,47 @@ func (c *Command) String() string {
 	}
 	str += "]"
 	return str
+}
+
+func (c *Command) newRespBuffer() ([]byte, error) {
+	var buf []byte
+	if c.le == nil {
+		buf = make([]byte, MaxBufferSizeExtended)
+		return buf, nil
+	}
+
+	switch len(c.le) {
+	case 0:
+		// No Le field, but still need room for SW1 and SW2
+		buf = make([]byte, 2)
+
+	case 1:
+		// Short Le field
+		le := int(c.le[0])
+		if le == 0 {
+			le = 256
+		}
+		buf = make([]byte, le+2) // Add 2 for SW1 and SW2
+
+	case 2:
+		// Extended Le field
+		le := int(c.le[0])<<8 + int(c.le[1])
+		if le == 0 {
+			le = 65536
+		}
+		buf = make([]byte, le+2) // Add 2 for SW1 and SW2
+
+	case 3:
+		// Special case, first byte should be 0, next two bytes are Le
+		if c.le[0] != 0 {
+			return nil, fmt.Errorf("invalid Le field")
+		}
+		le := int(c.le[1])<<8 + int(c.le[2])
+		buf = make([]byte, le+2) // Add 2 for SW1 and SW2
+
+	default:
+		return nil, fmt.Errorf("invalid Le field length")
+	}
+
+	return buf, nil
 }
