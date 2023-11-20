@@ -115,7 +115,7 @@ runner:
 			for i := range states {
 				states[i].CurrentState = states[i].EventState
 				if states[i].EventState&pcsc.ScardStatePresent != 0 {
-					s.debug("card is present in the reader.")
+					s.debug("card is present")
 					// check again context mat get invalid
 					if err = s.hctx.IsValid(); err != nil {
 						s.error(err)

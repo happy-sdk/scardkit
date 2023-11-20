@@ -1,0 +1,18 @@
+feat: support custom commands
+
+Signed-off-by: Marko Kungla <marko@mkungla.dev>
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Date:      Mon Nov 20 17:05:15 2023 +0200
+#
+# On branch main
+# Your branch is ahead of 'origin/main' by 1 commit.
+#   (use "git push" to publish your local commits)
+#
+# Changes to be committed:
+#	modified:   README.md
+#	modified:   ntag/ntag.go
+#	modified:   pcsc/pcsc.go
+#

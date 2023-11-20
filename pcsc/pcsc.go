@@ -470,6 +470,7 @@ func (rs SW1SW2) String() string {
 }
 
 type Command struct {
+	custom  bool
 	name    string
 	cla     byte   // Instruction class
 	ins     byte   // Instruction code
@@ -478,6 +479,14 @@ type Command struct {
 	lc      []byte // Encodes the number (Nc) of bytes of command data to follow
 	le      []byte // Encodes the maximum number (Ne) of response bytes expected
 	payload []byte // payload
+}
+
+func NewCustomCmd(payload []byte) *Command {
+	return &Command{
+		custom:  true,
+		payload: payload,
+		name:    "CUSTOM",
+	}
 }
 
 func NewCmd(cla, ins, p1, p2 byte) *Command {
@@ -505,6 +514,9 @@ func (c *Command) SetLE(le []byte) {
 
 // Bytes returns command byte slice with optional payload if present
 func (c *Command) Bytes() []byte {
+	if c.custom {
+		return c.payload
+	}
 	// Start with the CLA, INS, P1, P2
 	cmd := []byte{c.cla, c.ins, c.p1, c.p2}
 
@@ -535,5 +547,3 @@ func (c *Command) String() string {
 	str += "]"
 	return str
 }
-
-type CMD int

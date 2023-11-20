@@ -35,27 +35,21 @@ func main() {
   // if no SelectReader callback is set.
   sdk.SelectReader(func(rs []nfcsdk.Reader) ([]nfcsdk.Reader, error) {
     logger.Info("select first reader")
-		rs[0].Use = true
+    rs[0].Use = true
     return rs, nil
   })
 
   // Reads card uid when card is present
   sdk.OnCardPresent(func(card nfcsdk.Card) error {
     logger.Info("--- HANDLE CARD PRESENT ---")
-    cmd, err := ntag.Cmd(ntag.CmdGetUID)
+    cmdGetUID := ntag.CmdGetUID()
+
+    response, err := card.Transmit(cmdGetUID)
     if err != nil {
       return err
     }
 
-    response, err := card.Transmit(cmd)
-    if err != nil {
-      return err
-    }
-
-    logger.Info(cmd.String(),
-      slog.String("uid", nfcsdk.FormatByteSlice(response.Payload())),
-      response.LogAttr(),
-    )
+    logger.Info(cmdGetUID.String(), slog.String("uid", tag.UID), uidr.LogAttr())
     logger.Info("--- CARD HANDLE COMPLETED ---")
     return nil
   })
@@ -64,6 +58,20 @@ func main() {
     return
   }
 }
+// example out:
+// level=DEBUG msg="nfc: scard context established"
+// level=DEBUG msg="nfc: found reader" nfc.reader.id=1 nfc.reader.name="<your-reader>"
+// level=INFO msg="select first reader"
+// level=INFO msg="nfc: started" nfc.time="<current-time>"
+// level=DEBUG msg="nfc: no card present, waiting..."
+// level=DEBUG msg="nfc: card is present"
+// level=DEBUG msg="nfc: card connected" nfc.protocols="T1, Any"
+// level=INFO msg="nfc: connected card status" nfc.state="Present, Powered, Negotiable" nfc.protocol="T1, Any" nfc.reader="<your-reader>" nfc.atr=<reader-atr>
+// level=DEBUG msg="--- HANDLE CARD PRESENT ---"
+// level=DEBUG msg="GET_UID [FF:CA:00:00:00]" uid=01:02:03:04:05:06:07 status=success sw1=90 sw2=00 payload.len=7
+// level=DEBUG msg="--- CARD HANDLE COMPLETED ---"
+// level=INFO msg="nfc: card disconnected"
+// level=DEBUG msg="nfc: no card present, waiting..."
 
 ```
 

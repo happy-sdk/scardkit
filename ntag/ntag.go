@@ -51,7 +51,6 @@ const (
 	CmdSelect1                   // Select CL1, SEL_REQ CL1, 93h 70h
 	CmdSelect2                   // Select CL2, SEL_REQ CL2, 95h 70h
 	CmdHalt                      // HLTA, SLP_REQ, 50h 00h
-	CmdGetVersion                // GET_VERSION, 60h
 	CmdRead                      // READ, 30h
 	CmdFastRead                  // FAST_READ, 3Ah
 	CmdWrite                     // WRITE, A2h
@@ -59,9 +58,6 @@ const (
 	CmdReadCnt                   // READ_CNT, -39h
 	CmdPwdAuth                   // PWD_AUTH, -1Bh
 	CmdReadSig                   // READ_SIG, -3Ch
-
-	// other commands
-	CmdGetUID
 )
 
 var cmdNames = map[CMD]string{
@@ -73,7 +69,6 @@ var cmdNames = map[CMD]string{
 	CmdSelect1:        "Select CL1, SEL_REQ CL1",
 	CmdSelect2:        "Select CL2, SEL_REQ CL2",
 	CmdHalt:           "HLTA, SLP_REQ",
-	CmdGetVersion:     "GET_VERSION",
 	CmdRead:           "READ",
 	CmdFastRead:       "FAST_READ",
 	CmdWrite:          "WRITE",
@@ -81,7 +76,6 @@ var cmdNames = map[CMD]string{
 	CmdReadCnt:        "READ_CNT",
 	CmdPwdAuth:        "PWD_AUTH",
 	CmdReadSig:        "READ_SIG",
-	CmdGetUID:         "GET_UID",
 }
 
 var cmdBytes = map[CMD][2]byte{
@@ -93,7 +87,6 @@ var cmdBytes = map[CMD][2]byte{
 	CmdSelect1:        {0x93, 0x70},
 	CmdSelect2:        {0x95, 0x70},
 	CmdHalt:           {0x50, pcsc.ZeroByte},
-	CmdGetVersion:     {0x60, pcsc.ZeroByte},
 	CmdRead:           {0x30, pcsc.ZeroByte},
 	CmdFastRead:       {0x3A, pcsc.ZeroByte},
 	CmdWrite:          {0xA2, pcsc.ZeroByte},
@@ -101,7 +94,6 @@ var cmdBytes = map[CMD][2]byte{
 	CmdReadCnt:        {0x39, pcsc.ZeroByte},
 	CmdPwdAuth:        {0x1B, pcsc.ZeroByte},
 	CmdReadSig:        {0x3C, pcsc.ZeroByte},
-	CmdGetUID:         {0xFF, 0xCA}, // Class and Instruction byte for the Get UID command
 }
 
 // Cmd creates command byte slice with optional payload
@@ -124,4 +116,18 @@ func Cmd(c CMD) (*pcsc.Command, error) {
 	}
 
 	return cmd, nil
+}
+
+func CmdGetUID() *pcsc.Command {
+	cmd := pcsc.NewCmd(0xFF, 0xCA, pcsc.ZeroByte, pcsc.ZeroByte)
+	cmd.SetName("GET_UID")
+	return cmd
+}
+
+// CmdGetVersion
+// GET_VERSION, 60h
+func CmdGetVersion() *pcsc.Command {
+	cmd := pcsc.NewCustomCmd([]byte{0x60})
+	cmd.SetName("GET_VERSION")
+	return cmd
 }
