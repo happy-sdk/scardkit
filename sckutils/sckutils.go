@@ -36,12 +36,6 @@ func ParseHexString(hexStr string) ([]byte, error) { return nil, nil }
 // CheckStatusCode evaluates a status code to determine if an operation was successful.
 func CheckStatusCode(code byte) bool { return false }
 
-// NewDataBuffer creates a new DataBuffer with the provided data.
-func NewDataBuffer(data []byte) *DataBuffer { return nil }
-
-// UnmarshalDataBuffer sets the DataBuffer fields from a byte slice.
-func UnmarshalDataBuffer(data []byte) (*DataBuffer, error) { return nil, nil }
-
 // HumanizeBytes converts a size in bytes to a human-readable string in KB, MB, GB, etc.
 func HumanizeBytes(bytes int64) string {
 	const (
@@ -65,9 +59,17 @@ func HumanizeBytes(bytes int64) string {
 }
 
 // DataBuffer represents a generic data buffer for smart card operations.
-type DataBuffer struct {
-	Data []byte
+type Buffer struct {
+	data []byte
 }
 
+// NewDataBuffer creates a new DataBuffer with the provided data.
+func NewBuffer(data []byte) *Buffer { return nil }
+
 // Marshal serializes a DataBuffer into a byte slice.
-func (db *DataBuffer) Marshal() ([]byte, error) { return nil, nil }
+func (db *Buffer) Marshal() ([]byte, error) { return nil, nil }
+
+// Unmarshal sets the Buffer from a byte slice.
+func (db *Buffer) Unmarshal(data []byte) error {
+	return nil
+}
