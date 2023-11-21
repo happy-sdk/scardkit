@@ -61,3 +61,7 @@ func reflectUint16(x uint16) uint16 {
 	}
 	return reflection
 }
+
+// ref: found ideas for implementation from following links
+// http://www.sunshine2k.de/coding/javascript/crc/crc_js.html
+// https://hub.zhovner.com/tools/nfc/
