@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+// FormatByteSlice converts a byte slice to a human-readable hex string.
+// Each byte is represented in two hexadecimal characters, separated by colons.
 func FormatByteSlice(slice []byte) string {
 	const f = "%02X" // Define the format specifier
 	var b strings.Builder

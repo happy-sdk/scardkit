@@ -2,6 +2,8 @@
 
 NFC SDK to read and write NTAG213/215/216 NFC tags 
 
+[![Coverage Status](https://coveralls.io/repos/github/happy-sdk/nfcsdk/badge.svg?branch=main)](https://coveralls.io/github/happy-sdk/nfcsdk?branch=main)
+
 ## Example
 
 ```go
