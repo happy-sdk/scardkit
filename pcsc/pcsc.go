@@ -493,40 +493,6 @@ func (rs SW1SW2) String() string {
 	}
 }
 
-type Command struct {
-	postProcessFunc func([]byte) ([]byte, error)
-	custom          bool
-	name            string
-	cla             byte   // Instruction class
-	ins             byte   // Instruction code
-	p1              byte   // Instruction parameter 1 for the command
-	p2              byte   // Instruction parameter 2 for the command
-	lc              []byte // Encodes the number (Nc) of bytes of command data to follow
-	le              []byte // Encodes the maximum number (Ne) of response bytes expected
-	payload         []byte // payload
-	err             error
-}
-
-func NewCustomCmd(payload []byte) *Command {
-	return &Command{
-		custom:  true,
-		payload: payload,
-		name:    "CUSTOM",
-	}
-}
-
-func NewCmd(cla, ins, p1, p2 byte) *Command {
-	cmd := &Command{
-		name: "RAW",
-		cla:  cla,
-		ins:  ins,
-		p1:   p1,
-		p2:   p2,
-	}
-
-	return cmd
-}
-
 // Name returns command name
 func (c *Command) Name() string {
 	return c.name
@@ -535,21 +501,23 @@ func (c *Command) SetName(name string) {
 	c.name = name
 }
 
-func (c *Command) SetLe(le []byte) {
-	if l := len(le); l > 3 {
-		c.addErr(fmt.Errorf("(Le) invalid length %d [%s...]", l, helpers.FormatByteSlice(le[0:3])))
-		return
-	}
-	c.le = le
-}
-
 func (c *Command) addErr(err error) {
 	c.err = errors.Join(c.err, err)
 }
 
-// Bytes returns command byte slice with optional payload if present
+// Bytes constructs and returns the byte slice representation of the Command according to the APDU
+// structure, which includes CLA, INS, P1, P2, optionally Lc with payload, and Le. For custom commands,
+// where c.raw is true, the method directly returns the payload.
+//
+// The method constructs the command as follows:
+// 1. For custom commands, return the payload without modification.
+// 2. Begin with the standard APDU header: CLA, INS, P1, P2.
+// 3. If Lc is not nil and the payload is non-empty, append Lc and the payload.
+// 4. Append Le if it's set; otherwise, add ZeroByte to indicate no Le.
+//
+// This ensures the command is formatted correctly for NFC reader communication.
 func (c *Command) Bytes() []byte {
-	if c.custom {
+	if c.raw {
 		return c.payload
 	}
 	// Start with the CLA, INS, P1, P2

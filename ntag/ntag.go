@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/happy-sdk/nfcsdk/internal/helpers"
 	"github.com/happy-sdk/nfcsdk/pcsc"
 )
 
@@ -128,9 +129,10 @@ func Cmd(c CMD) (*pcsc.Command, error) {
 	return cmd, nil
 }
 
-func NewGetUIDCmd() *pcsc.Command {
-	cmd := pcsc.NewCmd(0xFF, 0xCA, pcsc.ZeroByte, pcsc.ZeroByte)
-	cmd.SetLe([]byte{7})
-	cmd.SetName("GET_UID")
-	return cmd
+type Signature []byte
+
+func (s Signature) String() string { return helpers.FormatByteSlice(s) }
+func (s *Signature) Unmarshal(payload []byte) error {
+	(*s) = payload
+	return nil
 }

@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/happy-sdk/nfcsdk/internal/helpers"
-	"github.com/happy-sdk/nfcsdk/pcsc"
 )
 
 type Version struct {
@@ -20,18 +19,6 @@ type Version struct {
 	StorageSize    Size
 	ProtocolType   ProtocolType
 	Valid          bool
-}
-
-// NewGetVersionCmd creates a new Command for the GET_VERSION NFC command, which is used to retrieve the
-// version information of an NFC tag. It constructs a PC/SC command with the appropriate instruction byte.
-// The command expects a response of 10 bytes:
-// 8 bytes for product version information
-// 2 bytes for CRC.
-func NewGetVersionCmd() *pcsc.Command {
-	cmd := pcsc.NewCustomCmd([]byte{0x60})
-	cmd.SetLe([]byte{10})
-	cmd.SetName("GET_VERSION")
-	return cmd
 }
 
 func (v *Version) Unmarshal(payload []byte) error {

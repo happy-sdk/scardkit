@@ -5,11 +5,9 @@
 package ntag
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/happy-sdk/nfcsdk/internal/helpers"
-	"github.com/happy-sdk/nfcsdk/pcsc"
 )
 
 type CapabilityContainer struct {
@@ -19,25 +17,6 @@ type CapabilityContainer struct {
 	ReadOnly      bool
 	accessControl byte
 	raw           []byte
-}
-
-func NewCapabilityReadCmd() *pcsc.Command {
-	cmd := pcsc.NewCustomCmd([]byte{0x30, 0x03})
-	cmd.SetLe([]byte{18}) // 3 blocks + CRC
-	cmd.SetName("GET_COMPATIBILITY")
-	cmd.SetPostProcessFunc(func(data []byte) ([]byte, error) {
-		if len(data) < 18 {
-			return nil, fmt.Errorf("expected 3 block response with CRC got %d bytes", len(data))
-		}
-		blocks := data[:16]
-		crc := data[16:]
-		if !VerifyCRCA(blocks, crc) {
-			return nil, errors.New("Capability Container (CC bytes) CRC check failed")
-		}
-		cc := data[:4]
-		return cc, nil
-	})
-	return cmd
 }
 
 func (cc *CapabilityContainer) Unmarshal(data []byte) error {
