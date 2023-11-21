@@ -37,7 +37,7 @@ jobs:
           files: ./coverage.out 
 
       - name: Install goveralls
-        run: go get github.com/mattn/goveralls
+        run: go install github.com/mattn/goveralls@latest
       - name: Send coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
