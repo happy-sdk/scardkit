@@ -107,25 +107,3 @@ type Card interface {
 	BeginTransaction() error
 	EndTransaction(pcsc.ScardDisposition) error
 }
-
-// HumanizeBytes converts a size in bytes to a human-readable string in KB, MB, GB, etc.
-func HumanizeBytes(bytes int64) string {
-	const (
-		kB int64 = 1 << 10 // 1024
-		mB int64 = 1 << 20 // 1048576
-		gB int64 = 1 << 30 // 1073741824
-	)
-
-	format := "%.2f %s"
-	switch {
-	case bytes < kB:
-		return fmt.Sprintf("%d B", bytes)
-	case bytes < mB:
-		return fmt.Sprintf(format, float64(bytes)/float64(kB), "KB")
-	case bytes < gB:
-		return fmt.Sprintf(format, float64(bytes)/float64(mB), "MB")
-	default:
-		// When file size is larger than 1 MB
-		return fmt.Sprintf(format, float64(bytes)/float64(gB), "GB")
-	}
-}

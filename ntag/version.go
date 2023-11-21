@@ -12,14 +12,14 @@ import (
 )
 
 type Version struct {
-	VendorID       string       `json:"vendorId"`
-	ProductType    string       `json:"productType"`
-	ProductSubtype string       `json:"productSubtype"`
-	MajorVersion   uint8        `json:"majorVersion"`
-	MinorVersion   uint8        `json:"minorVersion"`
-	StorageSize    int          `json:"storageSize"`
-	ProtocolType   ProtocolType `json:"protocolType"`
-	Valid          bool         `json:"-"`
+	VendorID       Byte
+	ProductType    Byte
+	ProductSubtype Byte
+	MajorVersion   uint8
+	MinorVersion   uint8
+	StorageSize    Size
+	ProtocolType   ProtocolType
+	Valid          bool
 }
 
 // NewGetVersionCmd creates a new Command for the GET_VERSION NFC command, which is used to retrieve the
@@ -47,28 +47,16 @@ func (v *Version) Unmarshal(payload []byte) error {
 		crc = payload[8:]
 		v.Valid = VerifyCRCA(data, crc)
 	}
-	if data[1] == 0x04 {
-		v.VendorID = "NXP Semiconductors"
-	} else {
-		v.VendorID = fmt.Sprintf("Unkown vendor id %02Xh", data[1])
-	}
-	if data[2] == 0x04 {
-		v.ProductType = "NTAG"
-	} else {
-		v.ProductType = fmt.Sprintf("Unkown product type %02Xh", data[2])
-	}
-	if data[3] == 0x02 {
-		v.ProductSubtype = "50 pF"
-	} else {
-		v.ProductSubtype = fmt.Sprintf("Unkown product subtype %02Xh", data[3])
-	}
+	v.VendorID = vendorID(data[1])
+	v.ProductType = productType(data[2])
+	v.ProductSubtype = productSubtype(data[3])
+
 	v.MajorVersion = data[4]
 	v.MinorVersion = data[5]
 	v.StorageSize = parseVersionStorageSize(data[6])
 	if data[7] == 0x03 {
 		v.ProtocolType = ProtocolType(data[7])
 	}
-	fmt.Println("DATA: ", helpers.FormatByteSlice(data))
 	return nil
 }
 
@@ -96,7 +84,47 @@ func (p ProtocolType) String() string {
 	return typstr
 }
 
-func parseVersionStorageSize(sizeb byte) int {
+type vendorID byte
+
+func (v vendorID) Byte() byte { return byte(v) }
+func (v vendorID) String() string {
+	if v == 0x04 {
+		return "NXP Semiconductors"
+	}
+	return fmt.Sprintf("Unkown vendor id %02Xh", byte(v))
+}
+
+type productType byte
+
+func (v productType) Byte() byte { return byte(v) }
+func (v productType) String() string {
+	if v == 0x04 {
+		return "NXP NTAG"
+	}
+	return fmt.Sprintf("Unkown product type %02Xh", byte(v))
+}
+
+type productSubtype byte
+
+func (v productSubtype) Byte() byte { return byte(v) }
+func (v productSubtype) String() string {
+	if v == 0x02 {
+		return "50 pF"
+	}
+	return fmt.Sprintf("Unkown product subtype %02Xh", byte(v))
+}
+
+type storageSize struct {
+	b byte
+	v int
+}
+
+func (s storageSize) Byte() byte     { return s.b }
+func (s storageSize) Size() int      { return s.v }
+func (s storageSize) String() string { return helpers.HumanizeBytes(int64(s.v)) }
+
+func parseVersionStorageSize(sizeb byte) (size storageSize) {
+	size.b = sizeb
 	// Extract the most significant 7 bits and calculate 2^n
 	n := int(sizeb >> 1)
 	base := 1 << n // 2^n
@@ -105,17 +133,18 @@ func parseVersionStorageSize(sizeb byte) int {
 		// Precise sizes for known models
 		switch sizeb {
 		case 0x0F: // NTAG213
-			return 144
+			size.v = 144
 		case 0x11: // NTAG215
-			return 504
+			size.v = 504
 		case 0x13: // NTAG216
-			return 888
+			size.v = 888
 		default:
 			// For unknown models, return an estimate (e.g., the average of the range)
-			return (base + (base << 1)) / 2
+			size.v = (base + (base << 1)) / 2
 		}
 	} else {
 		// If the least significant bit is 0, the size is exactly 2^n
-		return base
+		size.v = base
 	}
+	return size
 }

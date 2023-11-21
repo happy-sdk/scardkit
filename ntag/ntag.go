@@ -42,6 +42,16 @@ var (
 
 type CMD int
 
+type Byte interface {
+	String() string
+	Byte() byte
+}
+type Size interface {
+	String() string
+	Byte() byte
+	Size() int
+}
+
 const (
 	CmdRAW            CMD = iota // Raw constructed command
 	CmdRequest                   // REQA, SENS_REQ, 26h (7 bit)

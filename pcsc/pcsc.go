@@ -302,7 +302,7 @@ func (card *Card) Transmit(cmd *Command) (CardResponse, error) {
 	if err := rvToError(rv); err != nil {
 		return CardResponse{}, fmt.Errorf("%w: command %s", err, cmd.Name())
 	}
-	fmt.Println("RESPONSE: ", helpers.FormatByteSlice(rsp))
+
 	// Trim the response slice to the actual length of the response.
 	rsp = rsp[:recvLen]
 	if len(rsp) < 2 {
@@ -313,10 +313,20 @@ func (card *Card) Transmit(cmd *Command) (CardResponse, error) {
 	status := rsp[pllen:]
 	response := CardResponse{}
 	response.status = SW1SW2(status)
-	response.payload = rsp[:pllen]
-	if !response.Status().Success() {
-		return response, fmt.Errorf("%s: %w", cmd.Name(), response.Status().error())
+	var payload []byte
+	if cmd.postProcessFunc == nil {
+		payload = rsp[:pllen]
+	} else {
+		payload, err = cmd.postProcessFunc(rsp[:pllen])
+		if err != nil {
+			return CardResponse{}, fmt.Errorf("%s: %w", cmd.Name(), err)
+		}
 	}
+	response.payload = payload
+	if !response.Status().Success() {
+		return CardResponse{}, fmt.Errorf("%s: %w", cmd.Name(), response.Status().error())
+	}
+
 	return response, nil
 }
 
@@ -431,6 +441,10 @@ func (r CardResponse) LogAttr() slog.Attr {
 	)
 }
 
+func (r CardResponse) String() string {
+	return helpers.FormatByteSlice(r.payload)
+}
+
 type SW1SW2 [2]byte
 
 func (rs SW1SW2) error() error {
@@ -480,16 +494,17 @@ func (rs SW1SW2) String() string {
 }
 
 type Command struct {
-	custom  bool
-	name    string
-	cla     byte   // Instruction class
-	ins     byte   // Instruction code
-	p1      byte   // Instruction parameter 1 for the command
-	p2      byte   // Instruction parameter 2 for the command
-	lc      []byte // Encodes the number (Nc) of bytes of command data to follow
-	le      []byte // Encodes the maximum number (Ne) of response bytes expected
-	payload []byte // payload
-	err     error
+	postProcessFunc func([]byte) ([]byte, error)
+	custom          bool
+	name            string
+	cla             byte   // Instruction class
+	ins             byte   // Instruction code
+	p1              byte   // Instruction parameter 1 for the command
+	p2              byte   // Instruction parameter 2 for the command
+	lc              []byte // Encodes the number (Nc) of bytes of command data to follow
+	le              []byte // Encodes the maximum number (Ne) of response bytes expected
+	payload         []byte // payload
+	err             error
 }
 
 func NewCustomCmd(payload []byte) *Command {
@@ -566,6 +581,14 @@ func (c *Command) String() string {
 	}
 	str += "]"
 	return str
+}
+
+func (c *Command) SetPostProcessFunc(f func([]byte) ([]byte, error)) {
+	if c.postProcessFunc != nil {
+		c.addErr(errors.New("SetPostProcessFunc can only used once for command"))
+		return
+	}
+	c.postProcessFunc = f
 }
 
 func (c *Command) newRespBuffer() ([]byte, error) {
