@@ -6,9 +6,8 @@ on:
       - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,7 +26,7 @@ jobs:
 
       - name: Run tests and generate coverage report
         run: |
-          go test -coverpkg=./... -coverprofile=coverage.out ./...
+          go test -race  -coverpkg=./... -coverprofile=coverage.out ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -35,4 +34,29 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.out  # Path to the coverage report generated earlier
+          files: ./coverage.out 
+
+      - name: Install goveralls
+        run: go get github.com/mattn/goveralls
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -parallel -coverprofile=coverage.out -service=github
+  
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.x
+      - uses: actions/checkout@v3
+      - name: Install goveralls
+        env:
+          GO111MODULE: off
+        run: go get github.com/mattn/goveralls
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ github.token }}
+          GIT_BRANCH: ${{ github.head_ref }}
+        run: goveralls -parallel-finish -service=github
