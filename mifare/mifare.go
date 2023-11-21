@@ -20,10 +20,10 @@ const (
 )
 
 // NewCard initializes a new MIFARE card representation.
-func NewCard(uid []byte) *Card
+func NewCard(uid []byte) *Card { return nil }
 
 // CalculateChecksum calculates a checksum for data integrity verification.
-func CalculateChecksum(data []byte) byte
+func CalculateChecksum(data []byte) byte { return 0 }
 
 // Card represents a MIFARE card with its specific attributes.
 type Card struct {
@@ -31,10 +31,10 @@ type Card struct {
 }
 
 // MarshalSector serializes a Sector into a byte slice.
-func (s *Sector) Marshal() ([]byte, error)
+func (s *Sector) Marshal() ([]byte, error) { return nil, nil }
 
 // UnmarshalSector sets the Sector fields from a byte slice.
-func (s *Sector) Unmarshal(data []byte) error
+func (s *Sector) Unmarshal(data []byte) error { return nil }
 
 // Sector represents a sector in a MIFARE card.
 type Sector struct {
@@ -42,10 +42,16 @@ type Sector struct {
 }
 
 // ReadSector reads a specific sector from the card.
-func (c *Card) ReadSector(sectorNumber int, keyType string, key []byte) (*Sector, error)
+func (c *Card) ReadSector(sectorNumber int, keyType string, key []byte) (*Sector, error) {
+	return nil, nil
+}
 
 // WriteSector writes data to a specific sector on the card.
-func (c *Card) WriteSector(sectorNumber int, data []byte, keyType string, key []byte) error
+func (c *Card) WriteSector(sectorNumber int, data []byte, keyType string, key []byte) error {
+	return nil
+}
 
 // AuthenticateSector performs authentication for a specific sector on the card.
-func (c *Card) AuthenticateSector(sectorNumber int, keyType string, key []byte) (bool, error)
+func (c *Card) AuthenticateSector(sectorNumber int, keyType string, key []byte) (bool, error) {
+	return false, nil
+}

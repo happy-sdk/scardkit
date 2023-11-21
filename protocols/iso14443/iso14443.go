@@ -14,27 +14,27 @@ const (
 )
 
 // DetectCard performs a proximity card detection process.
-func DetectCard(readerConfig ReaderConfig) (*Card, error)
+func DetectCard(readerConfig ReaderConfig) (*Card, error) { return nil, nil }
 
 // ReadData reads data from an ISO 14443 card.
-func ReadData(card *Card, blockAddress byte) ([]byte, error)
+func ReadData(card *Card, blockAddress byte) ([]byte, error) { return nil, nil }
 
 // WriteData writes data to an ISO 14443 card.
-func WriteData(card *Card, blockAddress byte, data []byte) error
-
-// MarshalCard serializes a Card into a byte slice.
-func (c *Card) Marshal() ([]byte, error)
+func WriteData(card *Card, blockAddress byte, data []byte) error { return nil }
 
 // UnmarshalCard sets the Card fields from a byte slice.
-func UnmarshalCard(data []byte) (*Card, error)
+func UnmarshalCard(data []byte) (*Card, error) { return nil, nil }
 
 // CheckCardCompatibility checks if a card is compatible with ISO 14443 standards.
-func CheckCardCompatibility(card *Card) bool
+func CheckCardCompatibility(card *Card) bool { return false }
 
 // Card represents an ISO 14443 card with specific attributes.
 type Card struct {
 	// Fields like UID, ATS (Answer to Select), etc.
 }
+
+// MarshalCard serializes a Card into a byte slice.
+func (c *Card) Marshal() ([]byte, error) { return nil, nil }
 
 // ReaderConfig represents configuration settings for an ISO 14443 reader.
 type ReaderConfig struct {

@@ -15,13 +15,13 @@ const (
 )
 
 // ListReaders lists available PC/SC readers connected to the system.
-func ListReaders() ([]ReaderInfo, error)
+func ListReaders() ([]ReaderInfo, error) { return nil, nil }
 
 // ConnectToCard establishes a connection with a card in the specified reader.
-func ConnectToCard(readerName string) (*Card, error)
+func ConnectToCard(readerName string) (*Card, error) { return nil, nil }
 
 // ReaderStatus checks the status of a specified PC/SC reader.
-func ReaderStatus(readerName string) (string, error)
+func ReaderStatus(readerName string) (string, error) { return "", nil }
 
 // ReaderInfo represents information about a PC/SC reader.
 type ReaderInfo struct {
@@ -34,10 +34,10 @@ type Card struct {
 }
 
 // Transmit sends an APDU command to the card and receives a response.
-func (c *Card) Transmit(apduCommand []byte) ([]byte, error)
+func (c *Card) Transmit(apduCommand []byte) ([]byte, error) { return nil, nil }
 
 // Disconnect releases the connection with the card.
-func (c *Card) Disconnect() error
+func (c *Card) Disconnect() error { return nil }
 
 // CardStatus retrieves the current status of a smart card.
-func (c *Card) CardStatus() (string, error)
+func (c *Card) CardStatus() (string, error) { return "", nil }

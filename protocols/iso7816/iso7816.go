@@ -26,7 +26,7 @@ func NewResponseAPDU(data []byte, sw1, sw2 byte) *ResponseAPDU { return nil }
 func UnmarshalResponseAPDU(data []byte) (*ResponseAPDU, error) { return nil, nil }
 
 // CheckResponseStatus interprets the SW1 and SW2 status words of a response APDU.
-func CheckResponseStatus(sw1, sw2 byte) error
+func CheckResponseStatus(sw1, sw2 byte) error { return nil }
 
 // CommandAPDU represents an ISO 7816 command APDU structure.
 type CommandAPDU struct {

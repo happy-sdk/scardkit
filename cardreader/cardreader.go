@@ -40,10 +40,10 @@ func (s ReaderStatus) Connected() bool {
 }
 
 // GetStatus retrieves the current status of the smart card reader.
-func (r *Reader) GetStatus() (ReaderStatus, error)
+func (r *Reader) GetStatus() (ReaderStatus, error) { return ReaderStatus{}, nil }
 
 // Transmit sends a command APDU to the card and receives the response APDU.
-func (r *Reader) Transmit(cmdAPDU []byte) ([]byte, error)
+func (r *Reader) Transmit(cmdAPDU []byte) ([]byte, error) { return nil, nil }
 
 // ReaderStatus represents the status of the card reader.
 type ReaderStatus struct {

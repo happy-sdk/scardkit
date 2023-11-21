@@ -14,7 +14,7 @@ const (
 )
 
 // NewTag initializes a new NTAG NFC tag representation.
-func NewTag(uid []byte) *Tag
+func NewTag(uid []byte) *Tag { return nil }
 
 // Tag represents an NTAG NFC tag with its attributes.
 type Tag struct {
@@ -39,7 +39,7 @@ type Page struct {
 }
 
 // MarshalPage serializes a Page into a byte slice.
-func (p *Page) Marshal() ([]byte, error)
+func (p *Page) Marshal() ([]byte, error) { return nil, nil }
 
 // UnmarshalPage sets the Page fields from a byte slice.
-func (p *Page) Unmarshal(data []byte) error
+func (p *Page) Unmarshal(data []byte) error { return nil }
